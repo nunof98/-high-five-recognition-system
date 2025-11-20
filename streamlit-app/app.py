@@ -1,6 +1,13 @@
 from dotenv import load_dotenv
 import streamlit as st
-from sharepoint_client import SharePointClient
+
+# Set to True for local testing, False for SharePoint
+USE_LOCAL = True
+
+if USE_LOCAL:
+    from local_client import LocalClient
+else:
+    from sharepoint_client import SharePointClient
 
 load_dotenv()
 
@@ -161,11 +168,11 @@ def show_new_token_form(token, color):
                 st.error("⚠️ Please fill in all fields")
                 return False
 
-            # Submit to SharePoint
+            # Submit to local file or SharePoint
             try:
                 with st.spinner("Sending your High Five..."):
-                    sp_client = SharePointClient()
-                    success = sp_client.add_token(
+                    client = LocalClient() if USE_LOCAL else SharePointClient()
+                    success = client.add_token(
                         token=token,
                         color=color,
                         message=message,
@@ -231,11 +238,11 @@ def main():
         show_success_message()
         st.stop()
 
-    # Initialize SharePoint client and check token
+    # Initialize local or SharePoint client and check token
     try:
         with st.spinner("Checking your High Five token..."):
-            sp_client = SharePointClient()
-            existing_data = sp_client.check_token(token)
+            client = LocalClient() if USE_LOCAL else SharePointClient()
+            existing_data = client.check_token(token)
 
         if existing_data:
             # Token exists - display the message
