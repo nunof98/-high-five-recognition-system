@@ -7,7 +7,7 @@ WORKDIR /app
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy dependency files first for better caching
+# Copy dependency files
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies using uv sync
@@ -15,10 +15,11 @@ COPY pyproject.toml uv.lock ./
 # --no-dev: Don't install dev dependencies
 RUN uv sync --frozen --no-dev
 
-# Copy application files
-COPY app.py .
-COPY sharepoint_client.py .
-COPY .streamlit .streamlit
+# Copy application files from streamlit-app
+COPY streamlit-app/app.py .
+COPY streamlit-app/sharepoint_client.py .
+# COPY streamlit-app/local_client.py .
+COPY streamlit-app/.streamlit .streamlit
 
 # Expose port 8501 (Streamlit default)
 EXPOSE 8501
