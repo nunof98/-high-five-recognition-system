@@ -51,15 +51,6 @@ st.markdown(
         text-align: center;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    .stButton>button {
-        background: linear-gradient(135deg, #FF9900 0%, #FFE79B 100%);
-        color: #333;
-        font-weight: 600;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 2rem;
-        width: 100%;
-    }
     .stTextArea textarea, .stTextInput input {
         border: 2px solid #e0e0e0;
         border-radius: 8px;
@@ -244,10 +235,53 @@ def show_admin_page():
         else:
             st.markdown(f"### Total Submissions: {len(df)}")
 
-            # Display data
-            st.dataframe(df, use_container_width=True)
+            # Add a selection column for deletion
+            df_display = df.copy()
+            df_display.insert(0, "Select", False)
+
+            # Display editable dataframe with checkboxes
+            st.markdown("#### All Submissions")
+
+            edited_df = st.data_editor(
+                df_display,
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "Select": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="Select records to delete",
+                        default=False,
+                    )
+                },
+                disabled=["TokenID", "Color", "Message", "SubmittedBy", "Timestamp"],
+            )
+
+            # Delete selected records
+            selected_rows = edited_df[edited_df["Select"] == True]
+
+            if len(selected_rows) > 0:
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    if st.button(
+                        f"🗑️ Delete {len(selected_rows)} Record(s)",
+                        use_container_width=True,
+                    ):
+                        # Get indices of selected rows
+                        indices_to_delete = selected_rows.index.tolist()
+
+                        # Remove selected rows from original dataframe
+                        df_updated = df.drop(indices_to_delete)
+                        csv_client._save_data(df_updated)
+
+                        st.success(
+                            f"✅ Successfully deleted {len(selected_rows)} record(s)!"
+                        )
+                        st.rerun()
+
+            st.markdown("---")
 
             # Centered download buttons
+            st.markdown("#### Download Data")
             spacer1, col1, col2, spacer2 = st.columns([1, 2, 2, 1])
             with col1:
                 csv = df.to_csv(index=False).encode("utf-8")
@@ -269,6 +303,8 @@ def show_admin_page():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
                 )
+
+            st.markdown("---")
 
             # Statistics
             st.markdown("### Statistics")
@@ -300,14 +336,26 @@ def show_admin_page():
         st.error(f"Error loading data: {str(e)}")
 
 
+def show_admin_button():
+    """Display floating admin button on main pages"""
+    st.markdown('<div class="admin-button-container">', unsafe_allow_html=True)
+    if st.button("🔐 Admin", key="admin_access_btn"):
+        st.session_state["show_admin"] = True
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def main():
     """Main application logic"""
 
-    # Check for admin mode via URL param
+    # Check for admin mode via URL param or session state
     token, color = get_query_params()
-    if token == "admin":
+    if token == "admin" or st.session_state.get("show_admin", False):
         show_admin_page()
         return
+
+    # Show admin button on main pages
+    show_admin_button()
 
     # Validate parameters
     if not token or not color:
