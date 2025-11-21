@@ -1,8 +1,10 @@
-from dotenv import load_dotenv
 import streamlit as st
-from sharepoint_client import SharePointClient
+from csv_client import CSVClient
+import pandas as pd
+import io
 
-load_dotenv()
+# Admin password (change this or set in Streamlit secrets!)
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD")
 
 # Page configuration
 st.set_page_config(
@@ -82,9 +84,15 @@ COLORS = {
 
 
 def get_query_params():
-    """Get token and color from URL query parameters"""
+    """Get parameters from URL query parameters"""
     try:
         query_params = st.query_params
+
+        # Check for admin mode first
+        if query_params.get("admin", None) is not None:
+            return "admin", None
+
+        # Otherwise get token and color
         token = query_params.get("token", None)
         color = query_params.get("color", None)
         return token, color
@@ -161,11 +169,11 @@ def show_new_token_form(token, color):
                 st.error("⚠️ Please fill in all fields")
                 return False
 
-            # Submit to SharePoint
+            # Submit to CSV
             try:
                 with st.spinner("Sending your High Five..."):
-                    sp_client = SharePointClient()
-                    success = sp_client.add_token(
+                    csv_client = CSVClient()
+                    success = csv_client.add_token(
                         token=token,
                         color=color,
                         message=message,
@@ -215,11 +223,91 @@ def show_error_message(error_text):
     )
 
 
+def show_admin_page():
+    """Display admin page for viewing and managing data"""
+    st.markdown("# 🔐 Admin Dashboard")
+
+    # Password protection
+    password = st.text_input("Enter admin password:", type="password")
+    if password != ADMIN_PASSWORD:
+        if password:
+            st.error("❌ Incorrect password")
+        st.stop()
+    st.success("✅ Access granted")
+
+    try:
+        csv_client = CSVClient()
+        df = csv_client.get_all_data()
+
+        if df.empty:
+            st.info("No data yet!")
+        else:
+            st.markdown(f"### Total Submissions: {len(df)}")
+
+            # Display data
+            st.dataframe(df, use_container_width=True)
+
+            # Centered download buttons
+            spacer1, col1, col2, spacer2 = st.columns([1, 2, 2, 1])
+            with col1:
+                csv = df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv,
+                    file_name="highfive_data.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+            with col2:
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+                    df.to_excel(writer, index=False, sheet_name="HighFives")
+                st.download_button(
+                    label="📥 Download Excel",
+                    data=buffer.getvalue(),
+                    file_name="highfive_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                )
+
+            # Statistics
+            st.markdown("### Statistics")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(
+                    f"<div style='text-align:center;'><b>Total High Fives</b><br><span style='font-size:1.5em'>{len(df)}</span></div>",
+                    unsafe_allow_html=True,
+                )
+            with col2:
+                color_counts = df["Color"].value_counts()
+                most_popular = (
+                    color_counts.index[0] if not color_counts.empty else "N/A"
+                )
+                st.markdown(
+                    f"<div style='text-align:center;'><b>Most Popular Color</b><br><span style='font-size:1.5em'>{most_popular}</span></div>",
+                    unsafe_allow_html=True,
+                )
+            with col3:
+                recent = (
+                    str(df.tail(1)["Timestamp"].values[0]) if not df.empty else "N/A"
+                )
+                st.markdown(
+                    f"<div style='text-align:center;'><b>Most Recent</b><br><span style='font-size:1.1em'>{recent}</span></div>",
+                    unsafe_allow_html=True,
+                )
+
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+
+
 def main():
     """Main application logic"""
 
-    # Get query parameters
+    # Check for admin mode via URL param
     token, color = get_query_params()
+    if token == "admin":
+        show_admin_page()
+        return
 
     # Validate parameters
     if not token or not color:
@@ -231,11 +319,11 @@ def main():
         show_success_message()
         st.stop()
 
-    # Initialize SharePoint client and check token
+    # Initialize CSV client and check token
     try:
         with st.spinner("Checking your High Five token..."):
-            sp_client = SharePointClient()
-            existing_data = sp_client.check_token(token)
+            csv_client = CSVClient()
+            existing_data = csv_client.check_token(token)
 
         if existing_data:
             # Token exists - display the message

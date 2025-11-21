@@ -1,112 +1,87 @@
 # High Five Recognition System
 
-A QR code-based token validation system with SharePoint integration for employee recognition.
+A QR code-based recognition system.
 
 ## 🎯 Features
 
--   QR code scanning with unique token and color parameters
--   Token validation (checks if token has been used before)
--   Recognition message submission form
--   SharePoint Excel backend storage
--   Streamlit web application (Python-based)
--   Azure Container Apps hosting (serverless with scale-to-zero)
+-   🎫 QR code scanning with unique token and color parameters
+-   ✅ Token validation (checks if token has been used before)
+-   💬 Recognition message submission form
+-   📊 CSV-based storage
+-   🔐 Admin dashboard with password protection
+-   📥 Download data as CSV or Excel
+-   📈 Statistics and analytics
+-   📱 Mobile-responsive design
 
-## 📋 Setup Instructions
+## 🚀 Quick Start
 
-### Quick Start
+### Run Locally
 
-**For detailed step-by-step instructions, see [STREAMLIT_AZURE_SETUP.md](STREAMLIT_AZURE_SETUP.md)**
+````bash
+# Create a virtual environment
+uv venv
 
-### 1. SharePoint Setup
+```bash
+# Install dependencies
+uv sync
 
-1. Create a new Excel workbook in SharePoint named `HighFiveSuccesses.xlsx`
-2. Add the following columns:
-    - TokenID (Text)
-    - Color (Text)
-    - Message (Text)
-    - SubmittedBy (Text)
-    - Timestamp (Date)
-3. Format the data as a Table and name it "SuccessesTable"
+# Set admin password in .streamlit/secrets.toml
+echo 'ADMIN_PASSWORD = "your-password"' > .streamlit/secrets.toml
 
-### 2. Build and Test Locally
+# Run the app
+streamlit run streamlit-app/app.py
 
-1. **Install Python dependencies** from `streamlit-app/requirements.txt`
-2. **Set environment variables** with your Azure/SharePoint IDs
-3. **Run locally**: `streamlit run streamlit-app/app.py`
-4. **Test with sample QR parameters**: `?token=TEST001&color=orange`
+# Test it
+# User: http://localhost:8501?token=TEST001&color=blue
+# Admin: http://localhost:8501?admin
+````
 
-### 3. Deploy to Azure Container Apps
+## 📋 How It Works
 
-1. **Build Docker image** from Streamlit app
-2. **Push to Azure Container Registry**
-3. **Create Container App** with environment variables
-4. **Enable scale-to-zero** for cost savings
+### For Users (QR Code Recipients)
 
-### 4. Generate QR Codes
+1. **Scan QR code** on token
+2. **Read existing message** (if token already used) OR **Submit new message**
+3. **Enter name and message**
+4. **Submit** - Token is now marked as used
 
-Create QR codes with your Container App URL:
-const CONFIG = {
-checkTokenUrl:
-"https://YOUR-FUNCTION-APP.azurewebsites.net/api/checktoken?code=YOUR_KEY",
-submitTokenUrl:
-"https://YOUR-FUNCTION-APP.azurewebsites.net/api/submittoken?code=YOUR_KEY",
-};
+### For Admins
 
-```
+1. **Access admin dashboard**
+2. **Enter password**
+3. **View all submissions**, download data, see statistics
 
-### 4. Generate QR Codes
+## 🎨 QR Code Format
 
-Create QR codes with your Static Web App URL:
+Generate QR codes with this URL format:
 
 ```
+https://your-app.streamlit.app?token=UNIQUE_TOKEN&color=COLOR_NAME
+```
 
-https://your-app.azurestaticapps.net?token=ABC123&color=red
-https://your-app.azurestaticapps.net?token=DEF456&color=blue
+**Examples:**
 
+```
+https://your-app.streamlit.app?token=ABC123&color=orange
+https://your-app.streamlit.app?token=DEF456&color=blue
+https://your-app.streamlit.app?token=TEAM2025-001&color=green
+```
+
+**Admin Access:**
+
+```
+https://your-app.streamlit.app?token=admin&color=admin
 ```
 
 ## 🎨 Supported Colors
 
--   red
--   blue
--   green
--   yellow
--   purple
--   orange
-
-## 💰 Cost
-
--   Azure Container Registry (Basic): **$5/month**
--   Azure Container Apps (Consumption with scale-to-zero): **$0-2/month**
--   SharePoint Excel: **Included with O365**
--   **Total: ~$5-7/month** ✅ Well under budget!
-
-## 🔒 Security Notes
-
--   API routes secured via Azure AD App Registration
--   Microsoft Graph API authentication for SharePoint access
--   Duplicate token prevention built-in
--   Environment variables stored securely in Azure
--   Automatic HTTPS with free SSL certificate
-
-## 📱 Usage
-
-1. User scans QR code
-2. Website checks if token exists
-3. If exists: Shows previous message
-4. If new: Shows form to submit recognition
-5. Data saved to SharePoint Excel
-
-## 🛠️ Tech Stack
-
--   **Streamlit** (Python Web Framework)
--   **Azure Container Apps** (Serverless Container Hosting)
--   **Docker** (Containerization)
--   **Microsoft Graph API** (SharePoint Integration)
--   **SharePoint Excel** (Data Storage)
--   **Azure Container Registry** (Image Storage)
+-   red (#e74c3c)
+-   blue (#3498db)
+-   green (#2ecc71)
+-   yellow (#f39c12)
+-   purple (#9b59b6)
+-   orange (#FF9900)
 
 ## 📄 License
 
-MIT License - Feel free to modify and use for your organization.
-```
+MIT License - Feel free to use and modify for your organization!
