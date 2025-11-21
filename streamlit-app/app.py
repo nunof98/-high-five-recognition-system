@@ -245,7 +245,7 @@ def show_admin_page():
             edited_df = st.data_editor(
                 df_display,
                 hide_index=True,
-                use_container_width=True,
+                width="stretch",
                 column_config={
                     "Select": st.column_config.CheckboxColumn(
                         "Select",
@@ -264,7 +264,7 @@ def show_admin_page():
                 with col2:
                     if st.button(
                         f"🗑️ Delete {len(selected_rows)} Record(s)",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         # Get indices of selected rows
                         indices_to_delete = selected_rows.index.tolist()
@@ -290,7 +290,7 @@ def show_admin_page():
                     data=csv,
                     file_name="highfive_data.csv",
                     mime="text/csv",
-                    use_container_width=True,
+                    width="stretch",
                 )
             with col2:
                 buffer = io.BytesIO()
@@ -301,7 +301,7 @@ def show_admin_page():
                     data=buffer.getvalue(),
                     file_name="highfive_data.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             st.markdown("---")
