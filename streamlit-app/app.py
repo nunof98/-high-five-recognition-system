@@ -1,15 +1,10 @@
-from dotenv import load_dotenv
 import streamlit as st
+from csv_client import CSVClient
+import pandas as pd
+import io
 
-# Set to True for local testing, False for SharePoint
-USE_LOCAL = True
-
-if USE_LOCAL:
-    from local_client import LocalClient
-else:
-    from sharepoint_client import SharePointClient
-
-load_dotenv()
+# Admin password (change this or set in Streamlit secrets!)
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD")
 
 # Page configuration
 st.set_page_config(
@@ -56,15 +51,6 @@ st.markdown(
         text-align: center;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    .stButton>button {
-        background: linear-gradient(135deg, #FF9900 0%, #FFE79B 100%);
-        color: #333;
-        font-weight: 600;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 2rem;
-        width: 100%;
-    }
     .stTextArea textarea, .stTextInput input {
         border: 2px solid #e0e0e0;
         border-radius: 8px;
@@ -89,9 +75,15 @@ COLORS = {
 
 
 def get_query_params():
-    """Get token and color from URL query parameters"""
+    """Get parameters from URL query parameters"""
     try:
         query_params = st.query_params
+
+        # Check for admin mode first
+        if query_params.get("admin", None) is not None:
+            return "admin", None
+
+        # Otherwise get token and color
         token = query_params.get("token", None)
         color = query_params.get("color", None)
         return token, color
@@ -168,11 +160,11 @@ def show_new_token_form(token, color):
                 st.error("⚠️ Please fill in all fields")
                 return False
 
-            # Submit to local file or SharePoint
+            # Submit to CSV
             try:
                 with st.spinner("Sending your High Five..."):
-                    client = LocalClient() if USE_LOCAL else SharePointClient()
-                    success = client.add_token(
+                    csv_client = CSVClient()
+                    success = csv_client.add_token(
                         token=token,
                         color=color,
                         message=message,
@@ -222,11 +214,148 @@ def show_error_message(error_text):
     )
 
 
+def show_admin_page():
+    """Display admin page for viewing and managing data"""
+    st.markdown("# 🔐 Admin Dashboard")
+
+    # Password protection
+    password = st.text_input("Enter admin password:", type="password")
+    if password != ADMIN_PASSWORD:
+        if password:
+            st.error("❌ Incorrect password")
+        st.stop()
+    st.success("✅ Access granted")
+
+    try:
+        csv_client = CSVClient()
+        df = csv_client.get_all_data()
+
+        if df.empty:
+            st.info("No data yet!")
+        else:
+            st.markdown(f"### Total Submissions: {len(df)}")
+
+            # Add a selection column for deletion
+            df_display = df.copy()
+            df_display.insert(0, "Select", False)
+
+            # Display editable dataframe with checkboxes
+            st.markdown("#### All Submissions")
+
+            edited_df = st.data_editor(
+                df_display,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "Select": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="Select records to delete",
+                        default=False,
+                    )
+                },
+                disabled=["TokenID", "Color", "Message", "SubmittedBy", "Timestamp"],
+            )
+
+            # Delete selected records
+            selected_rows = edited_df[edited_df["Select"]]
+
+            if len(selected_rows) > 0:
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    if st.button(
+                        f"🗑️ Delete {len(selected_rows)} Record(s)",
+                        width="stretch",
+                    ):
+                        # Get indices of selected rows
+                        indices_to_delete = selected_rows.index.tolist()
+
+                        # Remove selected rows from original dataframe
+                        df_updated = df.drop(indices_to_delete)
+                        csv_client._save_data(df_updated)
+
+                        st.success(
+                            f"✅ Successfully deleted {len(selected_rows)} record(s)!"
+                        )
+                        st.rerun()
+
+            st.markdown("---")
+
+            # Centered download buttons
+            st.markdown("#### Download Data")
+            spacer1, col1, col2, spacer2 = st.columns([1, 2, 2, 1])
+            with col1:
+                csv = df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv,
+                    file_name="highfive_data.csv",
+                    mime="text/csv",
+                    width="stretch",
+                )
+            with col2:
+                buffer = io.BytesIO()
+                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+                    df.to_excel(writer, index=False, sheet_name="HighFives")
+                st.download_button(
+                    label="📥 Download Excel",
+                    data=buffer.getvalue(),
+                    file_name="highfive_data.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    width="stretch",
+                )
+
+            st.markdown("---")
+
+            # Statistics
+            st.markdown("### Statistics")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(
+                    f"<div style='text-align:center;'><b>Total High Fives</b><br><span style='font-size:1.5em'>{len(df)}</span></div>",
+                    unsafe_allow_html=True,
+                )
+            with col2:
+                color_counts = df["Color"].value_counts()
+                most_popular = (
+                    color_counts.index[0] if not color_counts.empty else "N/A"
+                )
+                st.markdown(
+                    f"<div style='text-align:center;'><b>Most Popular Color</b><br><span style='font-size:1.5em'>{most_popular}</span></div>",
+                    unsafe_allow_html=True,
+                )
+            with col3:
+                recent = (
+                    str(df.tail(1)["Timestamp"].values[0]) if not df.empty else "N/A"
+                )
+                st.markdown(
+                    f"<div style='text-align:center;'><b>Most Recent</b><br><span style='font-size:1.1em'>{recent}</span></div>",
+                    unsafe_allow_html=True,
+                )
+
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+
+
+def show_admin_button():
+    """Display floating admin button on main pages"""
+    st.markdown('<div class="admin-button-container">', unsafe_allow_html=True)
+    if st.button("🔐 Admin", key="admin_access_btn"):
+        st.session_state["show_admin"] = True
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
 def main():
     """Main application logic"""
 
-    # Get query parameters
+    # Check for admin mode via URL param or session state
     token, color = get_query_params()
+    if token == "admin" or st.session_state.get("show_admin", False):
+        show_admin_page()
+        return
+
+    # Show admin button on main pages
+    show_admin_button()
 
     # Validate parameters
     if not token or not color:
@@ -238,11 +367,11 @@ def main():
         show_success_message()
         st.stop()
 
-    # Initialize local or SharePoint client and check token
+    # Initialize CSV client and check token
     try:
         with st.spinner("Checking your High Five token..."):
-            client = LocalClient() if USE_LOCAL else SharePointClient()
-            existing_data = client.check_token(token)
+            csv_client = CSVClient()
+            existing_data = csv_client.check_token(token)
 
         if existing_data:
             # Token exists - display the message

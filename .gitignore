@@ -174,3 +174,9 @@ poetry.toml
 pyrightconfig.json
 
 *.xlsx
+# Data storage
+data/
+*.csv
+
+# Streamlit secrets
+.streamlit/secrets.toml
