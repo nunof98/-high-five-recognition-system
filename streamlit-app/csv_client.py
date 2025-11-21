@@ -15,12 +15,12 @@ class CSVClient:
     def _ensure_data_file(self):
         """Ensure CSV file and directory exist"""
         os.makedirs("data", exist_ok=True)
-        
+
         if not os.path.exists(self.csv_file):
             # Create empty CSV with headers
-            df = pd.DataFrame(columns=[
-                "TokenID", "Color", "Message", "SubmittedBy", "Timestamp"
-            ])
+            df = pd.DataFrame(
+                columns=["TokenID", "Color", "Message", "SubmittedBy", "Timestamp"]
+            )
             df.to_csv(self.csv_file, index=False)
 
     def _load_data(self) -> pd.DataFrame:
@@ -43,13 +43,13 @@ class CSVClient:
         """
         try:
             df = self._load_data()
-            
+
             # Find matching token
             match = df[df["TokenID"] == token]
-            
+
             if not match.empty:
                 return match.iloc[0].to_dict()
-            
+
             return None
         except Exception as e:
             raise Exception(f"Error checking token: {str(e)}")
@@ -80,18 +80,22 @@ class CSVClient:
 
             # Create new row
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            new_row = pd.DataFrame([{
-                "TokenID": token,
-                "Color": color,
-                "Message": message,
-                "SubmittedBy": submitted_by,
-                "Timestamp": timestamp
-            }])
+            new_row = pd.DataFrame(
+                [
+                    {
+                        "TokenID": token,
+                        "Color": color,
+                        "Message": message,
+                        "SubmittedBy": submitted_by,
+                        "Timestamp": timestamp,
+                    }
+                ]
+            )
 
             # Append and save
             df = pd.concat([df, new_row], ignore_index=True)
             self._save_data(df)
-            
+
             return True
 
         except Exception as e:

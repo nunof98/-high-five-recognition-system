@@ -257,7 +257,7 @@ def show_admin_page():
             )
 
             # Delete selected records
-            selected_rows = edited_df[edited_df["Select"] == True]
+            selected_rows = edited_df[edited_df["Select"]]
 
             if len(selected_rows) > 0:
                 col1, col2, col3 = st.columns([1, 2, 1])
