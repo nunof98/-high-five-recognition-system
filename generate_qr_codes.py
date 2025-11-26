@@ -8,7 +8,7 @@ import os
 from typing import List
 
 # Configuration
-APP_URL = "https://your-app.streamlit.app"  # Change this to your Streamlit app URL
+APP_URL = "https://highfive.streamlit.app/"
 OUTPUT_DIR = "qr_codes"
 COLORS = ["red", "blue", "green", "yellow", "purple", "orange"]
 

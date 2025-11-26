@@ -180,3 +180,5 @@ data/
 
 # Streamlit secrets
 .streamlit/secrets.toml
+
+/qr_codes

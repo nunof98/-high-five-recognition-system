@@ -56,21 +56,22 @@ streamlit run streamlit-app/app.py
 Generate QR codes with this URL format:
 
 ```
-https://your-app.streamlit.app?token=UNIQUE_TOKEN&color=COLOR_NAME
+https://highfive.streamlit.app?token=UNIQUE_TOKEN&color=COLOR_NAME
 ```
 
 **Examples:**
 
 ```
-https://your-app.streamlit.app?token=ABC123&color=orange
-https://your-app.streamlit.app?token=DEF456&color=blue
-https://your-app.streamlit.app?token=TEAM2025-001&color=green
+https://highfive.streamlit.app?token=ABC123&color=orange
+https://highfive.streamlit.app?token=DEF456&color=blue
+https://highfive.streamlit.app?token=TEAM2025-001&color=green
 ```
 
 **Admin Access:**
 
 ```
-https://your-app.streamlit.app?token=admin&color=admin
+https://highfive.streamlit.app?token=admin&color=admin
+https://highfive.streamlit.app?admin
 ```
 
 ## 🎨 Supported Colors

@@ -105,7 +105,6 @@ def display_existing_message(data):
                 {data["Color"].upper()} Token
             </div>
             <p style="font-size: 1.2em; margin: 15px 0;"><strong>"{data["Message"]}"</strong></p>
-            <p style="color: #666; font-size: 0.9em;">- {data["SubmittedBy"]}</p>
             <p style="color: #999; font-size: 0.8em; margin-top: 10px;">
                 {data["Timestamp"]}
             </p>
